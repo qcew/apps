@@ -2,7 +2,7 @@
 
     var TextTables = win.TextTables || {};
 
-    var MIN_WIDTH = 24;
+    var MIN_WIDTH = 16;
 
     function padLeft(val,len) {
         if (val.length > len) {
