@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Example Application</title>
+    <style>
+        #results {
+            position: relative;
+            width:600px;
+            height:360px;
+            border:1px solid rgb(128,128,128);
+            resize: none;
+            outline-color: transparent;
+            white-space: nowrap;
+        }
+
+
+    </style>
+    <script>
+
+        function byId(id) { 
+            return document.getElementById(id);
+        }
+
+
+        function getFile(url,callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET","https://cors-anywhere.herokuapp.com/" + url,true);
+            xhr.onreadystatechange = function() {
+                try{
+                    if (xhr.readyState == "4" || xhr.status == "200") {
+                        callback(xhr.responseText);
+                    }
+                } catch (er) {}
+            };
+            xhr.send();
+        }
+
+        function example() {
+            var url = "https://data.bls.gov/cew/data/api/2018/1/industry/10.csv";
+            var el = byId("results");
+            el.innerHTML = "loading...";
+            getFile(url,function(responseText) {
+                el.innerHTML = convertToTabTable(responseText);
+            });
+        }
+
+        function convertToTabTable(csvText) {
+            csvText = csvText.replace(/\"/g,"")
+            csvText = csvText.replace(/\,/g,"\t\t\t");
+
+        }
+
+    </script>
+</head>
+<body>
+    <h1>Example Application</h1>
+    <hr>
+    <button onclick="example()">Run Example</button>
+    
+    <textarea id="results"></textarea>
+    
+</body>
+</html>
