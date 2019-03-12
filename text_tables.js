@@ -1,8 +1,197 @@
 (function(win){
 
     var TextTables = win.TextTables || {};
+    var MIN_WIDTH = 3;
+    var HTML_TEMPLATE = fn2Str(function(){/*
+        <div id="{id}_headers_wrapper" style="{headers_wrapper_style}">
+            <textarea id="{id}_headers" style="{headers_style}" {headers_attribs}>{headers_text}</textarea>
+        </div>
+        <div id="{id}_row_numbers_wrapper" style="{row_numbers_wrapper_style}">
+            <textarea id="{id}_row_numbers" style="{row_numbers_style}" {row_numbers_attribs}>{row_numbers_text}</textarea>
+        </div>
+        <div id="{id}_data_rows_wrapper" style="{data_rows_wrapper_style}">
+            <textarea id="{id}_data_rows" style="{data_rows_style}" {data_rows_attribs}>{data_rows_text}</textarea>
+        </div>
+    */});
 
-    var MIN_WIDTH = 16;
+    var tableProperties = {
+
+        "headers_wrapper_style" : {
+            "position": "absolute",
+            "display" : "inline-block",
+            "top" : "-16px",
+            "left" : "80px",
+            "right" : "0px",
+            "height": "92px",
+            "box-sizing" : "border-box",
+            "margin" : "0",
+            "padding" : "0",
+            "font-size" : "0px",
+            "border": "1px solid rgb(64,64,64)",
+            "border-right": "1px solid rgb(240,240,240)"
+        },
+        "headers_style" : { 
+            "position": "absolute",
+            "display" : "inline-block",
+            "top" : "0px",
+            "left" : "0px",
+            "width" : "100%",
+            "height" : "100%",
+            "border" : "none",
+            "background" : "rgb(240,240,240)",
+            "color" : "rgb(16,16,16)",
+            "font-size" : "13px",
+            "font-family": "monospace",
+            "box-sizing":"border-box",
+            "overflow":"scroll",
+            "line-height": "13px",
+            "box-sizing": "border-box",
+            "padding": "0px",
+            "margin": "0px",
+            "outline-color" : "transparent"
+        },
+        "headers_attribs": {
+            "wrap" : "off",
+            "autocomplete" :"off",
+            "autocorrect": "off",
+            "autocapitalize":"off",
+            "spellcheck":"false",
+            "readonly": "readonly"
+        },
+
+        "row_numbers_wrapper_style" : {
+            "position": "absolute",
+            "display" : "inline-block",
+            "top" : "32px",
+            "left" : "0px",
+            "width" : "80px",
+            "bottom": "0px",
+            "border" : "none",
+            "border-right": "1px solid rgb(240,240,240)",
+            "border-top" : "1px solid rgb(64,64,64)",
+            "box-sizing" : "border-box",
+            "margin" : "0",
+            "padding" : "0",
+            "font-size" : "0px"
+        },
+        "row_numbers_style" : {
+            "position": "absolute",
+            "display" : "inline-block",
+            "top" : "0px",
+            "left" : "0px",
+            "width" : "100%",
+            "height" : "100%",
+            "background" : "rgb(240,240,240)",
+            "color" : "rgb(16,16,16)",
+            "font-size" : "13px",
+            "font-family": "monospace",
+            "overflow-x" : "scroll",
+            "overflow-y" : "hidden",
+            "text-align": "right",
+            "box-sizing":"border-box",
+            "line-height": "13px",
+            "box-sizing": "border-box",
+            "padding": "0px",
+            "margin": "0px",
+            "resize": "none",
+            "outline-color" : "transparent",
+            "border" : "none"
+        },
+        "row_numbers_attribs" : {
+            "wrap" : "off",
+            "autocomplete" :"off",
+            "autocorrect": "off",
+            "autocapitalize":"off",
+            "spellcheck":"false",
+            "readonly": "readonly"
+        },
+
+        "data_rows_wrapper_style" : {
+            "position": "absolute",
+            "display" : "inline-block",
+            "top" : "32px",
+            "left" : "80px",
+            "right": "0px",
+            "bottom": "0px",
+            "border" : "1px solid rgb(255,255,255)",
+            "border-top": "1px solid rgb(64,64,64)",
+            "border-left": "1px solid rgb(64,64,64)",
+            "box-sizing" : "border-box",
+            "margin" : "0",
+            "padding" : "0",
+            "font-size" : "0px"
+        },
+        "data_rows_style" : {
+            "position": "absolute",
+            "display" : "inline-block",
+            "top" : "0px",
+            "left" : "0px",
+            "width" : "100%",
+            "height" : "100%",
+            "overflow" : "scroll",
+            "text-align" : "right",
+            "border": "none",
+            "background" : "rgb(255,255,255)",
+            "color" : "rgb(16,16,16)",
+            "font-size" : "13px",
+            "font-family": "monospace",
+            "resize" : "none",
+            "box-sizing":"border-box",
+            "line-height": "13px",
+            "padding": "0px",
+            "margin": "0px",
+            "outline-color" : "transparent"
+            
+        },
+        "data_rows_attribs" : { 
+            "wrap" : "off",
+            "onscroll" : "TextTables.handleScroll(event)",
+            "autocomplete" :"off",
+            "autocorrect": "off",
+            "autocapitalize":"off",
+            "spellcheck":"false",
+            "readonly": "readonly"
+        }
+        
+    };
+
+    function jsObjectToCssText(obj) {
+        var cssText = "";
+        var value = "";
+        for (var name in obj) {
+            if (obj.hasOwnProperty(name)) {
+                cssText += name + ":" + obj[name] + "; ";
+            }
+        }
+        return cssText.trim();
+    }
+
+    function jsObjectToAttribs(obj) {
+        var attribs = "";
+        var value = "";
+        for (var name in obj) {
+            if (obj.hasOwnProperty(name)) {
+                attribs += name + "=\"" + obj[name] + "\" ";
+            }
+        }
+        return attribs;
+    }
+
+    function templateFill(template,valuesObj) {
+        var regExp;
+        for(var name in valuesObj) {
+            if (valuesObj.hasOwnProperty(name)) {
+                regExp = new RegExp("\\{" + name + "\\}","g");
+                template = template.replace(regExp,valuesObj[name]);
+            }
+        }
+        return template;
+    }
+
+    function fn2Str(fn) {
+        var s = String(fn);
+        return s.substring(s.indexOf("/*")+2,s.lastIndexOf("*/"));
+    }
 
     function padLeft(val,len) {
         if (val.length > len) {
@@ -58,32 +247,83 @@
             headerName = headers[i];
             tableObject.headers.push({
                 "name" : headerName,
-                "width" : headerName.length > MIN_WIDTH ? (headerName.length +2 ): MIN_WIDTH 
+                "width" : headerName.length > MIN_WIDTH ? (headerName.length +1 ): MIN_WIDTH 
             });
         }
         tableObject.data = csvData;
         return tableObject;
     }
 
-
-    TextTables.setTextarea = function TextTables_setTextArea ( elemId, csvText ) {
+    function convertToFlatText(csvText) {
         var table = convertToCsvTable(csvText);
         var data = table.data;
         var headers = table.headers;
         var row;
         var cellValue;
-        var text = "";
-        for (var r = 0; r < data.length; r += 1) {
+        var dataText = "";
+        var rowNums = "1 \n";
+        var emptyHeaderText = "";
+        var headerText = "";
+
+        for (var h = 0; h < headers.length; h += 1) {
+            emptyHeaderText += padLeft("",headers[h].width) + "|";
+            headerText += padLeft(headers[h].name,headers[h].width) + "|";
+        }
+
+        for (var r = 1; r < data.length; r += 1) {
+            rowNums += (r+1) + " \n";
             row = data[r];
             for (var c = 0; c < row.length; c += 1) {
                 cellValue = row[c];
-                text += padLeft(cellValue,headers[c].width) + "|";
+                dataText += padLeft(cellValue,headers[c].width) + "|";
             }
-            text += "\n";
+            dataText += "\n";
         }
-        document.getElementById(elemId).value = text;
+        return {
+            "headersText" : emptyHeaderText + "\n" + emptyHeaderText + "\n" + headerText + "\n" + emptyHeaderText,
+            "rowNumbersText" : rowNums,
+            "dataRowsText" : dataText
+        };
+    }
+
+    TextTables.loadTable = function TextTables_loadTable( elemId, csvText ) {
+        
+        var tableInfo = convertToFlatText(csvText);
+
+        var objectFill = {
+            "id" : elemId,
+            "headers_text" : tableInfo.headersText,
+            "row_numbers_text": tableInfo.rowNumbersText,
+            "data_rows_text" : tableInfo.dataRowsText,
+            "headers_wrapper_style" : jsObjectToCssText(tableProperties.headers_wrapper_style),
+            "headers_style" : jsObjectToCssText(tableProperties.headers_style),
+            "headers_attribs": jsObjectToAttribs(tableProperties.headers_attribs),
+            "row_numbers_wrapper_style" : jsObjectToCssText(tableProperties.row_numbers_wrapper_style),
+            "row_numbers_style" : jsObjectToCssText(tableProperties.row_numbers_style),
+            "row_numbers_attribs": jsObjectToAttribs(tableProperties.row_numbers_attribs),
+            "data_rows_wrapper_style":jsObjectToCssText(tableProperties.data_rows_wrapper_style),
+            "data_rows_style":jsObjectToCssText(tableProperties.data_rows_style),
+            "data_rows_attribs": jsObjectToAttribs(tableProperties.data_rows_attribs)
+        };
+
+        document.getElementById(elemId).innerHTML = templateFill(HTML_TEMPLATE,objectFill);
+        document.getElementById(elemId).style.overflow = "hidden";
+        document.getElementById(elemId).style.background = "rgb(240,240,240)";
+        document.getElementById(elemId).style.border = "1px solid rgb(64,64,64)";
     };
 
+    TextTables.handleScroll = function TextTables_handleScroll(ev) {
+        var e = ev || window.event;
+        var el = e.target || e.srcElement;
+        var id = el.id;
+        var rootName = id.substring(0,id.indexOf("_"));
+
+        var rowNumsEl = document.getElementById(rootName + "_row_numbers");
+        var headersEl = document.getElementById(rootName + "_headers");
+
+        rowNumsEl.scrollTop = el.scrollTop;
+        headersEl.scrollLeft = el.scrollLeft;
+    };
 
     win.TextTables = TextTables;
 
